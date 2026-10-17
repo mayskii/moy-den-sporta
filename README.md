@@ -1,7 +1,9 @@
-# Мой день спорта
+# My Workout Day
 
-Простое веб-приложение для телефона: ежедневный чек-лист упражнений с нормой «минимум 3 в день», цветной календарь и статистика.
+A simple phone web app: a daily exercise checklist with a goal of at least 3 a day, a color calendar and stats.
 
-Учебный проект курса AI Fluency. План проекта: [plan-proekta.md](plan-proekta.md).
+Live: https://mayskii.github.io/moy-den-sporta/
 
-Данные хранятся только в браузере телефона (localStorage) и никуда не отправляются.
+A learning project for the AI Fluency course. Project plan: [project-plan.md](project-plan.md).
+
+Data is stored only in your phone's browser (localStorage) and is never sent anywhere.

@@ -1,26 +1,26 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F6F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Мой день">
-<title>Мой день спорта</title>
+<meta name="apple-mobile-web-app-title" content="My Day">
+<title>My Workout Day</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
 
 <style>
-  /* Макет: одна узкая колонка под палец — дата, прогресс к норме, список упражнений карточками-переключателями */
+  /* Layout: one narrow, thumb-friendly column — date, progress toward the daily goal, exercise cards that toggle */
   :root {
-    --bg: #F3F6F5;          /* фон: светлый, с лёгким зелёным оттенком */
-    --surface: #FFFFFF;     /* карточки */
-    --fg: #17201D;          /* основной текст */
-    --muted: #66736E;       /* подписи */
-    --line: #DCE3E0;        /* рамки */
-    --accent: #2F7A66;      /* эвкалиптовый зелёный: отметки и прогресс */
-    --accent-soft: #E1EFEA; /* фон отмеченной карточки */
+    --bg: #F3F6F5;          /* background: light, slightly green */
+    --surface: #FFFFFF;     /* cards */
+    --fg: #17201D;          /* main text */
+    --muted: #66736E;       /* secondary text */
+    --line: #DCE3E0;        /* borders */
+    --accent: #2F7A66;      /* eucalyptus green: checkmarks and progress */
+    --accent-soft: #E1EFEA; /* background of a checked card */
     --on-accent: #FFFFFF;
 
     --font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -41,7 +41,7 @@
 
   *, *::before, *::after { box-sizing: border-box; }
   html, body { height: 100%; }
-  /* отступы под «чёлку» и полоску жестов на iPhone */
+  /* room for the iPhone notch and home indicator */
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   body {
     margin: 0;
@@ -55,11 +55,11 @@
   }
   .app { max-width: 440px; margin-inline: auto; display: flex; flex-direction: column; gap: 24px; }
 
-  /* Шапка: день недели и дата */
+  /* Header: weekday and date */
   .weekday { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .date { margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
 
-  /* Блок прогресса к норме дня */
+  /* Progress toward the daily goal */
   .progress { display: flex; flex-direction: column; gap: 10px; }
   .progress-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
   .count { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -69,7 +69,7 @@
   .step { flex: 1; height: 6px; border-radius: 3px; background: var(--line); transition: background .25s; }
   .step.on { background: var(--accent); }
 
-  /* Список упражнений */
+  /* Exercise list */
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .item {
     width: 100%;
@@ -130,47 +130,51 @@
 </main>
 
 <script>
-  // ---------- 1. Данные по умолчанию ----------
-  // Библиотека упражнений. У каждого есть id (внутреннее имя, не меняется),
-  // название и «доза» — сколько делать.
+  // ---------- 1. Default data ----------
+  // The exercise library. Each exercise has an id (internal name, never changes),
+  // a display name and a "dose" — how much to do.
   const DEFAULT_EXERCISES = [
-    { id: "walk",    name: "Прогулка",           dose: "30 мин" },
-    { id: "squats",  name: "Приседания",         dose: "×10" },
-    { id: "pushups", name: "Отжимания",          dose: "×10" },
-    { id: "plank",   name: "Планка",             dose: "1 мин" },
-    { id: "qigong",  name: "Китайская гимнастика", dose: "30 мин" },
-    { id: "face",    name: "Фейс-йога",          dose: "" },
-    { id: "stretch", name: "Растяжка",           dose: "5 мин" },
+    { id: "walk",    name: "Walk",         dose: "30 min" },
+    { id: "squats",  name: "Squats",       dose: "×10" },
+    { id: "pushups", name: "Push-ups",     dose: "×10" },
+    { id: "plank",   name: "Plank",        dose: "1 min" },
+    { id: "qigong",  name: "Qigong",       dose: "30 min" },
+    { id: "face",    name: "Face yoga",    dose: "30 min" },
+    { id: "stretch", name: "Stretching",   dose: "5 min" },
   ];
-  const DEFAULT_GOAL = 3; // норма: сколько упражнений сделать за день
+  const DEFAULT_GOAL = 3; // daily goal: how many exercises to do
 
-  // ---------- 2. Хранение ----------
-  // Всё приложение хранится одним объектом в памяти браузера (localStorage):
+  // ---------- 2. Storage ----------
+  // The whole app is stored as one object in the browser's memory (localStorage):
   // {
-  //   exercises: [...],                 — библиотека упражнений
-  //   goal: 3,                          — норма дня
-  //   days: { "2026-10-16": ["walk", "plank"] }  — что отмечено в какой день
+  //   goal: 3,                                    — daily goal
+  //   days: { "2026-10-16": ["walk", "plank"] }   — what was checked on which day
   // }
+  // Days are stored by exercise id, so renaming an exercise keeps its history.
+  // Until there is a screen for editing the library, the list always comes from DEFAULT_EXERCISES.
   const STORAGE_KEY = "moy-den-sporta";
   let storageWorks = true;
 
   function load() {
+    const state = { exercises: DEFAULT_EXERCISES, goal: DEFAULT_GOAL, days: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (saved && saved.days) return saved;
+      if (saved && saved.days) { state.days = saved.days; state.goal = saved.goal || DEFAULT_GOAL; }
     } catch (e) { storageWorks = false; }
-    return { exercises: DEFAULT_EXERCISES, goal: DEFAULT_GOAL, days: {} };
+    return state;
   }
 
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); storageWorks = true; }
-    catch (e) { storageWorks = false; }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ goal: state.goal, days: state.days }));
+      storageWorks = true;
+    } catch (e) { storageWorks = false; }
   }
 
   let state = load();
 
-  // ---------- 3. Сегодняшний день ----------
-  // Ключ дня — дата в формате ГГГГ-ММ-ДД по местному времени телефона.
+  // ---------- 3. Today ----------
+  // A day's key is the date as YYYY-MM-DD in the phone's local time.
   function dayKey(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -178,9 +182,9 @@
     return `${y}-${m}-${day}`;
   }
 
-  // ---------- 4. Отметка упражнения ----------
-  // Нажатие на карточку добавляет упражнение в список сделанных за сегодня
-  // или убирает его оттуда, если оно уже было отмечено.
+  // ---------- 4. Checking an exercise ----------
+  // Tapping a card adds the exercise to today's done list,
+  // or removes it if it was already checked.
   function toggle(id) {
     const key = dayKey(new Date());
     const done = new Set(state.days[key] || []);
@@ -190,7 +194,7 @@
     render();
   }
 
-  // ---------- 5. Отрисовка экрана ----------
+  // ---------- 5. Drawing the screen ----------
   const CHECK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
 
   function render() {
@@ -199,21 +203,21 @@
     const count = state.exercises.filter(ex => done.has(ex.id)).length;
     const goal = state.goal;
 
-    // Дата
-    document.getElementById("weekday").textContent = now.toLocaleDateString("ru-RU", { weekday: "long" });
-    document.getElementById("date").textContent = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    // Date
+    document.getElementById("weekday").textContent = now.toLocaleDateString("en-US", { weekday: "long" });
+    document.getElementById("date").textContent = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 
-    // Прогресс: «2 из 3» и полоска из делений по числу нормы
-    document.getElementById("count").textContent = `${Math.min(count, goal)} из ${goal}` + (count > goal ? ` · всего ${count}` : "");
+    // Progress: "2 of 3" and a bar with one segment per goal step
+    document.getElementById("count").textContent = `${Math.min(count, goal)} of ${goal}` + (count > goal ? ` · ${count} total` : "");
     const status = document.getElementById("status");
-    if (count >= goal) { status.textContent = "Норма выполнена"; status.className = "status done"; }
-    else if (count > 0) { status.textContent = `Осталось ${goal - count}`; status.className = "status"; }
-    else { status.textContent = "Пока ничего"; status.className = "status"; }
+    if (count >= goal) { status.textContent = "Goal reached"; status.className = "status done"; }
+    else if (count > 0) { status.textContent = `${goal - count} to go`; status.className = "status"; }
+    else { status.textContent = "Nothing yet"; status.className = "status"; }
 
     document.getElementById("steps").innerHTML =
       Array.from({ length: goal }, (_, i) => `<span class="step${i < count ? " on" : ""}"></span>`).join("");
 
-    // Список упражнений
+    // Exercise list
     const list = document.getElementById("list");
     list.innerHTML = "";
     for (const ex of state.exercises) {
@@ -231,10 +235,10 @@
       list.appendChild(li);
     }
 
-    // Предупреждение, если браузер не даёт сохранять
+    // Warning if the browser won't let us save
     document.getElementById("note").textContent = storageWorks
-      ? "Отметки сохраняются на этом телефоне."
-      : "Браузер не даёт сохранять данные: отметки пропадут после закрытия страницы.";
+      ? "Your checkmarks are saved on this phone."
+      : "This browser won't save data: checkmarks will be lost when you close the page.";
   }
 
   render();
