@@ -1,0 +1,112 @@
+// ---------- 1. Default data ----------
+// The exercise library. Each exercise has an id (internal name, never changes),
+// a display name and a "dose" — how much to do.
+const DEFAULT_EXERCISES = [
+  { id: "walk",    name: "Walk",         dose: "30 min" },
+  { id: "squats",  name: "Squats",       dose: "×10" },
+  { id: "pushups", name: "Push-ups",     dose: "×10" },
+  { id: "plank",   name: "Plank",        dose: "1 min" },
+  { id: "qigong",  name: "Qigong",       dose: "30 min" },
+  { id: "face",    name: "Face yoga",    dose: "30 min" },
+  { id: "stretch", name: "Stretching",   dose: "5 min" },
+];
+const DEFAULT_GOAL = 3; // daily goal: how many exercises to do
+
+// ---------- 2. Storage ----------
+// The whole app is stored as one object in the browser's memory (localStorage):
+// {
+//   goal: 3,                                    — daily goal
+//   days: { "2026-10-16": ["walk", "plank"] }   — what was checked on which day
+// }
+// Days are stored by exercise id, so renaming an exercise keeps its history.
+// Until there is a screen for editing the library, the list always comes from DEFAULT_EXERCISES.
+const STORAGE_KEY = "moy-den-sporta";
+let storageWorks = true;
+
+function load() {
+  const state = { exercises: DEFAULT_EXERCISES, goal: DEFAULT_GOAL, days: {} };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && saved.days) { state.days = saved.days; state.goal = saved.goal || DEFAULT_GOAL; }
+  } catch (e) { storageWorks = false; }
+  return state;
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ goal: state.goal, days: state.days }));
+    storageWorks = true;
+  } catch (e) { storageWorks = false; }
+}
+
+let state = load();
+
+// ---------- 3. Today ----------
+// A day's key is the date as YYYY-MM-DD in the phone's local time.
+function dayKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// ---------- 4. Checking an exercise ----------
+// Tapping a card adds the exercise to today's done list,
+// or removes it if it was already checked.
+function toggle(id) {
+  const key = dayKey(new Date());
+  const done = new Set(state.days[key] || []);
+  done.has(id) ? done.delete(id) : done.add(id);
+  state.days[key] = [...done];
+  save();
+  render();
+}
+
+// ---------- 5. Drawing the screen ----------
+const CHECK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+
+function render() {
+  const now = new Date();
+  const done = new Set(state.days[dayKey(now)] || []);
+  const count = state.exercises.filter(ex => done.has(ex.id)).length;
+  const goal = state.goal;
+
+  // Date
+  document.getElementById("weekday").textContent = now.toLocaleDateString("en-US", { weekday: "long" });
+  document.getElementById("date").textContent = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+
+  // Progress: "2 of 3" and a bar with one segment per goal step
+  document.getElementById("count").textContent = `${Math.min(count, goal)} of ${goal}` + (count > goal ? ` · ${count} total` : "");
+  const status = document.getElementById("status");
+  if (count >= goal) { status.textContent = "Goal reached"; status.className = "status done"; }
+  else if (count > 0) { status.textContent = `${goal - count} to go`; status.className = "status"; }
+  else { status.textContent = "Nothing yet"; status.className = "status"; }
+
+  document.getElementById("steps").innerHTML =
+    Array.from({ length: goal }, (_, i) => `<span class="step${i < count ? " on" : ""}"></span>`).join("");
+
+  // Exercise list
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  for (const ex of state.exercises) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "ex-" + ex.id;
+    btn.className = "item";
+    btn.setAttribute("aria-pressed", done.has(ex.id));
+    btn.innerHTML = `<span class="check">${CHECK_ICON}</span><span class="name"></span><span class="dose"></span>`;
+    btn.querySelector(".name").textContent = ex.name;
+    btn.querySelector(".dose").textContent = ex.dose;
+    btn.addEventListener("click", () => toggle(ex.id));
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+
+  // Warning if the browser won't let us save
+  document.getElementById("note").textContent = storageWorks
+    ? "Your checkmarks are saved on this phone."
+    : "This browser won't save data: checkmarks will be lost when you close the page.";
+}
+
+render();
