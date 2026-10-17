@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F6F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Мой день">
+<title>Мой день спорта</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
+
+<style>
+  /* Макет: одна узкая колонка под палец — дата, прогресс к норме, список упражнений карточками-переключателями */
+  :root {
+    --bg: #F3F6F5;          /* фон: светлый, с лёгким зелёным оттенком */
+    --surface: #FFFFFF;     /* карточки */
+    --fg: #17201D;          /* основной текст */
+    --muted: #66736E;       /* подписи */
+    --line: #DCE3E0;        /* рамки */
+    --accent: #2F7A66;      /* эвкалиптовый зелёный: отметки и прогресс */
+    --accent-soft: #E1EFEA; /* фон отмеченной карточки */
+    --on-accent: #FFFFFF;
+
+    --font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
+      --line: #26312E; --accent: #5FBF9F; --accent-soft: #1C3029; --on-accent: #0E1A16;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
+    --line: #26312E; --accent: #5FBF9F; --accent-soft: #1C3029; --on-accent: #0E1A16;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  /* отступы под «чёлку» и полоску жестов на iPhone */
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+    padding-inline: 16px;
+    padding-block: 24px 40px;
+  }
+  .app { max-width: 440px; margin-inline: auto; display: flex; flex-direction: column; gap: 24px; }
+
+  /* Шапка: день недели и дата */
+  .weekday { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .date { margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+
+  /* Блок прогресса к норме дня */
+  .progress { display: flex; flex-direction: column; gap: 10px; }
+  .progress-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .count { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .status { font-size: 14px; color: var(--muted); }
+  .status.done { color: var(--accent); font-weight: 600; }
+  .steps { display: flex; gap: 6px; }
+  .step { flex: 1; height: 6px; border-radius: 3px; background: var(--line); transition: background .25s; }
+  .step.on { background: var(--accent); }
+
+  /* Список упражнений */
+  .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .item {
+    width: 100%;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    min-height: 60px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .item[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; }
+
+  .check {
+    flex: none; width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--line);
+    display: grid; place-items: center;
+    transition: background .2s, border-color .2s;
+  }
+  .check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .15s; }
+  .check path { fill: none; stroke: var(--on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .item[aria-pressed="true"] .check { background: var(--accent); border-color: var(--accent); }
+  .item[aria-pressed="true"] .check svg { opacity: 1; }
+
+  .name { flex: 1; min-width: 0; font-weight: 500; }
+  .dose { flex: none; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .note { margin: 0; font-size: 13px; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header>
+    <p class="weekday" id="weekday"></p>
+    <h1 class="date" id="date"></h1>
+  </header>
+
+  <section class="progress" aria-live="polite">
+    <div class="progress-row">
+      <span class="count" id="count"></span>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <ul class="list" id="list"></ul>
+
+  <p class="note" id="note"></p>
+</main>
+
+<script>
+  // ---------- 1. Данные по умолчанию ----------
+  // Библиотека упражнений. У каждого есть id (внутреннее имя, не меняется),
+  // название и «доза» — сколько делать.
+  const DEFAULT_EXERCISES = [
+    { id: "walk",    name: "Прогулка",           dose: "30 мин" },
+    { id: "squats",  name: "Приседания",         dose: "×10" },
+    { id: "pushups", name: "Отжимания",          dose: "×10" },
+    { id: "plank",   name: "Планка",             dose: "1 мин" },
+    { id: "qigong",  name: "Китайская гимнастика", dose: "30 мин" },
+    { id: "face",    name: "Фейс-йога",          dose: "" },
+    { id: "stretch", name: "Растяжка",           dose: "5 мин" },
+  ];
+  const DEFAULT_GOAL = 3; // норма: сколько упражнений сделать за день
+
+  // ---------- 2. Хранение ----------
+  // Всё приложение хранится одним объектом в памяти браузера (localStorage):
+  // {
+  //   exercises: [...],                 — библиотека упражнений
+  //   goal: 3,                          — норма дня
+  //   days: { "2026-10-16": ["walk", "plank"] }  — что отмечено в какой день
+  // }
+  const STORAGE_KEY = "moy-den-sporta";
+  let storageWorks = true;
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && saved.days) return saved;
+    } catch (e) { storageWorks = false; }
+    return { exercises: DEFAULT_EXERCISES, goal: DEFAULT_GOAL, days: {} };
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); storageWorks = true; }
+    catch (e) { storageWorks = false; }
+  }
+
+  let state = load();
+
+  // ---------- 3. Сегодняшний день ----------
+  // Ключ дня — дата в формате ГГГГ-ММ-ДД по местному времени телефона.
+  function dayKey(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  // ---------- 4. Отметка упражнения ----------
+  // Нажатие на карточку добавляет упражнение в список сделанных за сегодня
+  // или убирает его оттуда, если оно уже было отмечено.
+  function toggle(id) {
+    const key = dayKey(new Date());
+    const done = new Set(state.days[key] || []);
+    done.has(id) ? done.delete(id) : done.add(id);
+    state.days[key] = [...done];
+    save();
+    render();
+  }
+
+  // ---------- 5. Отрисовка экрана ----------
+  const CHECK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+
+  function render() {
+    const now = new Date();
+    const done = new Set(state.days[dayKey(now)] || []);
+    const count = state.exercises.filter(ex => done.has(ex.id)).length;
+    const goal = state.goal;
+
+    // Дата
+    document.getElementById("weekday").textContent = now.toLocaleDateString("ru-RU", { weekday: "long" });
+    document.getElementById("date").textContent = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+
+    // Прогресс: «2 из 3» и полоска из делений по числу нормы
+    document.getElementById("count").textContent = `${Math.min(count, goal)} из ${goal}` + (count > goal ? ` · всего ${count}` : "");
+    const status = document.getElementById("status");
+    if (count >= goal) { status.textContent = "Норма выполнена"; status.className = "status done"; }
+    else if (count > 0) { status.textContent = `Осталось ${goal - count}`; status.className = "status"; }
+    else { status.textContent = "Пока ничего"; status.className = "status"; }
+
+    document.getElementById("steps").innerHTML =
+      Array.from({ length: goal }, (_, i) => `<span class="step${i < count ? " on" : ""}"></span>`).join("");
+
+    // Список упражнений
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    for (const ex of state.exercises) {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "ex-" + ex.id;
+      btn.className = "item";
+      btn.setAttribute("aria-pressed", done.has(ex.id));
+      btn.innerHTML = `<span class="check">${CHECK_ICON}</span><span class="name"></span><span class="dose"></span>`;
+      btn.querySelector(".name").textContent = ex.name;
+      btn.querySelector(".dose").textContent = ex.dose;
+      btn.addEventListener("click", () => toggle(ex.id));
+      li.appendChild(btn);
+      list.appendChild(li);
+    }
+
+    // Предупреждение, если браузер не даёт сохранять
+    document.getElementById("note").textContent = storageWorks
+      ? "Отметки сохраняются на этом телефоне."
+      : "Браузер не даёт сохранять данные: отметки пропадут после закрытия страницы.";
+  }
+
+  render();
+</script>
+
+</body>
+</html>
