@@ -36,7 +36,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* "hidden" must always win, even over display: flex on .view — that's how tabs are switched */
 [hidden] { display: none !important; }
-html, body { height: 100%; }
+html, body { min-height: 100%; } /* min-height, not height: long tabs (Stats) must grow and scroll */
 /* room for the iPhone notch and home indicator */
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body {
