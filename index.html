@@ -16,23 +16,63 @@
 <body>
 
 <main class="app">
-  <header>
-    <p class="weekday" id="weekday"></p>
-    <h1 class="date" id="date"></h1>
-  </header>
 
-  <section class="progress" aria-live="polite">
-    <div class="progress-row">
-      <span class="count" id="count"></span>
-      <span class="status" id="status"></span>
+  <!-- Today tab -->
+  <section class="view" id="view-today">
+    <header>
+      <p class="weekday" id="weekday"></p>
+      <h1 class="date" id="date"></h1>
+    </header>
+
+    <div class="progress" aria-live="polite">
+      <div class="progress-row">
+        <span class="count" id="count"></span>
+        <span class="status" id="status"></span>
+      </div>
+      <div class="steps" id="steps"></div>
     </div>
-    <div class="steps" id="steps"></div>
+
+    <ul class="list" id="list"></ul>
+
+    <p class="note" id="note"></p>
   </section>
 
-  <ul class="list" id="list"></ul>
+  <!-- Calendar tab -->
+  <section class="view" id="view-calendar" hidden>
+    <header class="cal-header">
+      <button type="button" class="icon-btn" id="cal-prev" aria-label="Previous month">‹</button>
+      <h1 class="cal-title" id="cal-title"></h1>
+      <button type="button" class="icon-btn" id="cal-next" aria-label="Next month">›</button>
+    </header>
 
-  <p class="note" id="note"></p>
+    <div class="cal-weekdays" aria-hidden="true">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+
+    <ul class="legend">
+      <li><span class="dot good"></span>Goal reached</li>
+      <li><span class="dot partial"></span>Some done</li>
+      <li><span class="dot missed"></span>Missed</li>
+    </ul>
+
+    <div class="day-detail" id="day-detail" aria-live="polite"></div>
+  </section>
+
+  <!-- Stats tab (next step) -->
+  <section class="view" id="view-stats" hidden>
+    <h1 class="date">Stats</h1>
+    <p class="note">Coming in the next step.</p>
+  </section>
+
 </main>
+
+<!-- Bottom tab bar -->
+<nav class="tabbar" aria-label="Sections">
+  <button type="button" class="tab" id="tab-today" data-view="today">Today</button>
+  <button type="button" class="tab" id="tab-calendar" data-view="calendar">Calendar</button>
+  <button type="button" class="tab" id="tab-stats" data-view="stats">Stats</button>
+</nav>
 
 </body>
 </html>
