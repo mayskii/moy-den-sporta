@@ -1,3 +1,13 @@
+/* Onest font, stored in this project (fonts/), so the app makes no requests to other servers.
+   One "variable" file covers all weights 400–700. License: fonts/OFL.txt */
+@font-face {
+  font-family: "Onest";
+  src: url("fonts/onest-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Layout: one narrow, thumb-friendly column — date, progress toward the daily goal, exercise cards that toggle */
 :root {
   --bg: #F3F6F5;          /* background: light, slightly green */
