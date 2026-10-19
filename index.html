@@ -59,10 +59,42 @@
     <div class="day-detail" id="day-detail" aria-live="polite"></div>
   </section>
 
-  <!-- Stats tab (next step) -->
+  <!-- Stats tab -->
   <section class="view" id="view-stats" hidden>
     <h1 class="date">Stats</h1>
-    <p class="note">Coming in the next step.</p>
+
+    <!-- Period switch: this week / this month / all time -->
+    <div class="segmented" role="group" aria-label="Period">
+      <button type="button" id="period-week" data-period="week">This week</button>
+      <button type="button" id="period-month" data-period="month">This month</button>
+      <button type="button" id="period-all" data-period="all">All time</button>
+    </div>
+
+    <!-- Headline: share of days with the goal reached -->
+    <div class="hero">
+      <p class="hero-label">Days with goal reached</p>
+      <p class="hero-value" id="hero-value"></p>
+      <p class="hero-sub" id="hero-sub"></p>
+    </div>
+
+    <!-- Per-exercise counts -->
+    <div class="card">
+      <h2 class="card-title">Times done</h2>
+      <ul class="bars" id="ex-bars"></ul>
+    </div>
+
+    <!-- Weekly chart: green / yellow / red days in each of the last 8 weeks -->
+    <div class="card">
+      <h2 class="card-title">Last 8 weeks</h2>
+      <p class="card-sub">Days per week · tap a week for details</p>
+      <div class="weeks" id="weeks"></div>
+      <ul class="legend">
+        <li><span class="dot good"></span>Goal reached</li>
+        <li><span class="dot partial"></span>Some done</li>
+        <li><span class="dot missed"></span>Missed</li>
+      </ul>
+      <p class="week-detail" id="week-detail" aria-live="polite"></p>
+    </div>
   </section>
 
 </main>

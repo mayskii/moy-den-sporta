@@ -243,7 +243,136 @@ function shiftMonth(delta) {
 document.getElementById("cal-prev").addEventListener("click", () => shiftMonth(-1));
 document.getElementById("cal-next").addEventListener("click", () => shiftMonth(1));
 
-// ---------- 8. Tabs ----------
+// ---------- 8. Stats tab ----------
+let statsPeriod = "week"; // "week" | "month" | "all"
+
+// Adds n days to a day key: addDays("2026-10-31", 1) → "2026-11-01"
+function addDays(key, n) {
+  const d = keyToDate(key);
+  d.setDate(d.getDate() + n);
+  return dayKey(d);
+}
+
+// Monday of the week that contains the given day
+function mondayOf(key) {
+  const d = keyToDate(key);
+  return addDays(key, -((d.getDay() + 6) % 7));
+}
+
+// Counts green / yellow / red days from one day to another (both included).
+// Days before the start date and today-with-nothing-yet ("pending") are not counted:
+// the first didn't exist for you, the second isn't over.
+function countDays(fromKey, toKey) {
+  const result = { good: 0, partial: 0, missed: 0 };
+  for (let k = fromKey; k <= toKey; k = addDays(k, 1)) {
+    const s = dayStatus(k);
+    if (s in result) result[s]++;
+  }
+  return result;
+}
+
+function renderStats() {
+  const today = dayKey(new Date());
+
+  // 1) Period: from its first day (but never before startedOn) up to today
+  let from = state.startedOn;
+  if (statsPeriod === "week") from = mondayOf(today);
+  if (statsPeriod === "month") from = today.slice(0, 8) + "01"; // "2026-10-19" → "2026-10-01"
+  if (from < state.startedOn) from = state.startedOn;
+
+  for (const p of ["week", "month", "all"]) {
+    document.getElementById("period-" + p).setAttribute("aria-pressed", p === statsPeriod);
+  }
+
+  // 2) Headline: share of counted days where the goal was reached
+  const c = countDays(from, today);
+  const total = c.good + c.partial + c.missed;
+  document.getElementById("hero-value").textContent = total ? Math.round(c.good / total * 100) + "%" : "–";
+  document.getElementById("hero-sub").textContent = total
+    ? `${c.good} of ${total} ${total === 1 ? "day" : "days"} · ${c.partial} some done · ${c.missed} missed`
+    : "No finished days yet in this period";
+
+  // 3) Times each exercise was done in the period, most frequent first
+  const counts = state.exercises.map(ex => {
+    let n = 0;
+    for (let k = from; k <= today; k = addDays(k, 1)) if ((state.days[k] || []).includes(ex.id)) n++;
+    return { ex, n };
+  }).sort((a, b) => b.n - a.n);
+  const max = Math.max(1, ...counts.map(x => x.n));
+
+  const bars = document.getElementById("ex-bars");
+  bars.innerHTML = "";
+  for (const { ex, n } of counts) {
+    const li = document.createElement("li");
+    li.className = "bar-row";
+    li.innerHTML = `<span class="bar-name"></span><span class="bar-track"><span class="bar-fill"></span><span class="bar-value"></span></span>`;
+    li.querySelector(".bar-name").textContent = ex.name;
+    const fill = li.querySelector(".bar-fill");
+    fill.style.width = `calc((100% - 2.5em) * ${n / max})`; // leave room for the number at the tip
+    if (n === 0) fill.classList.add("zero");
+    li.querySelector(".bar-value").textContent = n;
+    bars.appendChild(li);
+  }
+
+  renderWeeks(today);
+}
+
+// 4) Last 8 weeks: one column per week, stacked green / yellow / red days
+let selectedWeek = null;
+const DAY_PX = 14, GAP_PX = 2; // one day = 14px of column height, 2px gap between segments
+
+function renderWeeks(today) {
+  const box = document.getElementById("weeks");
+  box.innerHTML = "";
+  const thisMonday = mondayOf(today);
+
+  for (let i = 7; i >= 0; i--) {
+    const mon = addDays(thisMonday, -7 * i);
+    const sun = addDays(mon, 6);
+    const c = countDays(mon, sun < today ? sun : today);
+    const label = keyToDate(mon).toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "week";
+    btn.setAttribute("aria-pressed", mon === selectedWeek);
+    btn.setAttribute("aria-label", weekText(mon, sun, c));
+
+    const col = document.createElement("span");
+    col.className = "week-col";
+    for (const s of ["good", "partial", "missed"]) { // drawn from the bottom up
+      if (!c[s]) continue;
+      const seg = document.createElement("span");
+      seg.className = "seg " + s;
+      seg.style.height = (c[s] * DAY_PX + (c[s] - 1) * GAP_PX) + "px";
+      col.appendChild(seg);
+    }
+    const lab = document.createElement("span");
+    lab.textContent = label;
+    btn.append(col, lab);
+    btn.addEventListener("click", () => {
+      selectedWeek = mon === selectedWeek ? null : mon;
+      renderWeeks(today);
+    });
+    box.appendChild(btn);
+
+    if (mon === selectedWeek) document.getElementById("week-detail").textContent = weekText(mon, sun, c);
+  }
+  if (!selectedWeek) document.getElementById("week-detail").textContent = "";
+}
+
+function weekText(mon, sun, c) {
+  const fmt = k => keyToDate(k).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const n = c.good + c.partial + c.missed;
+  if (!n) return `${fmt(mon)} – ${fmt(sun)}: no tracked days`;
+  return `${fmt(mon)} – ${fmt(sun)}: ${c.good} goal reached, ${c.partial} some done, ${c.missed} missed`;
+}
+
+for (const p of ["week", "month", "all"]) {
+  document.getElementById("period-" + p).addEventListener("click", () => { statsPeriod = p; renderStats(); });
+}
+
+// ---------- 9. Tabs ----------
 // Only one tab section is visible at a time; the others get the "hidden" attribute.
 const VIEWS = ["today", "calendar", "stats"];
 let currentView = "today";
@@ -264,6 +393,7 @@ function showView(name) {
     selectedKey = null;
     renderCalendar();
   }
+  if (name === "stats") { selectedWeek = null; renderStats(); }
   window.scrollTo(0, 0);
 }
 for (const v of VIEWS) {
@@ -275,6 +405,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   if (currentView === "today") renderToday();
   if (currentView === "calendar") renderCalendar();
+  if (currentView === "stats") renderStats();
 });
 
 // First draw

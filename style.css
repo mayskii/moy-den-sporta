@@ -5,11 +5,11 @@
   --fg: #17201D;          /* main text */
   --muted: #66736E;       /* secondary text */
   --line: #DCE3E0;        /* borders */
-  --accent: #2F7A66;      /* eucalyptus green: checkmarks and progress */
-  --accent-soft: #E1EFEA; /* background of a checked card */
+  --accent: #2A7382;      /* teal green: checkmarks and progress */
+  --accent-soft: #E0EEF0; /* background of a checked card */
   --on-accent: #FFFFFF;
   /* day colors in the calendar */
-  --good: #2F7A66;        /* goal reached (same green as the accent) */
+  --good: #2A7382;        /* goal reached (same as the accent; teal so it stays distinct from red for colorblind users) */
   --partial: #E2B33C;     /* some done */
   --missed: #D9644F;      /* nothing done */
   --on-day: #FFFFFF;      /* number on a green or red day */
@@ -21,19 +21,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
-    --line: #26312E; --accent: #5FBF9F; --accent-soft: #1C3029; --on-accent: #0E1A16;
-    --good: #5FBF9F; --partial: #E7C15A; --missed: #E07A66; --on-day: #0E1A16; --on-partial: #0E1A16;
+    --line: #26312E; --accent: #6FD0B0; --accent-soft: #1C3029; --on-accent: #0E1A16;
+    --good: #6FD0B0; --partial: #E7C15A; --missed: #D9644F; --on-day: #0E1A16; --on-partial: #0E1A16;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
-  --line: #26312E; --accent: #5FBF9F; --accent-soft: #1C3029; --on-accent: #0E1A16;
-  --good: #5FBF9F; --partial: #E7C15A; --missed: #E07A66; --on-day: #0E1A16; --on-partial: #0E1A16;
+  --line: #26312E; --accent: #6FD0B0; --accent-soft: #1C3029; --on-accent: #0E1A16;
+  --good: #6FD0B0; --partial: #E7C15A; --missed: #D9644F; --on-day: #0E1A16; --on-partial: #0E1A16;
   color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+/* "hidden" must always win, even over display: flex on .view — that's how tabs are switched */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 /* room for the iPhone notch and home indicator */
 :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -147,6 +149,59 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .day-detail h2 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
 .day-detail p { margin: 0; font-size: 14px; color: var(--muted); }
 .day-detail ul { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Stats ---------- */
+/* Period switch: three buttons joined into one control */
+.segmented { display: flex; gap: 4px; padding: 4px; background: var(--line); border-radius: 12px; }
+.segmented button {
+  flex: 1; min-height: 40px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--muted);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--fg); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Headline number */
+.hero p { margin: 0; }
+.hero-label { font-size: 14px; color: var(--muted); }
+.hero-value { font-size: 56px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; }
+.hero-sub { font-size: 14px; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card-title { margin: 0; font-size: 17px; font-weight: 600; }
+.card-sub { margin: -8px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Per-exercise horizontal bars: name, bar, count at the tip */
+.bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 7.5em 1fr; align-items: center; gap: 10px; font-size: 14px; }
+.bar-name { min-width: 0; overflow-wrap: anywhere; }
+.bar-track { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bar-fill { height: 12px; border-radius: 0 4px 4px 0; background: var(--accent); min-width: 2px; }
+.bar-fill.zero { background: var(--line); }
+.bar-value { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* Weekly stacked columns */
+.weeks { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; align-items: end; }
+.week {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 0; background: transparent; padding: 4px 0; border-radius: 8px;
+  color: var(--muted); font: inherit; font-size: 11px; font-variant-numeric: tabular-nums;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.week:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.week[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+/* the column: 7 day-slots tall, stacked from the bottom, 2px gaps between segments */
+.week-col {
+  width: 100%; max-width: 24px; height: 112px;
+  display: flex; flex-direction: column-reverse; gap: 2px;
+  border-bottom: 1px solid var(--line);
+}
+.seg { flex: none; }
+.seg.good { background: var(--good); }
+.seg.partial { background: var(--partial); }
+.seg.missed { background: var(--missed); }
+.week-col .seg:last-child { border-radius: 4px 4px 0 0; } /* rounded top end, square at the baseline */
+.week-detail { margin: 0; font-size: 14px; color: var(--muted); min-height: 1.45em; }
 
 /* ---------- Bottom tab bar ---------- */
 .tabbar {
