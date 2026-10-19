@@ -4,6 +4,6 @@ A simple phone web app: a daily exercise checklist with a goal of at least 3 a d
 
 Live: https://mayskii.github.io/moy-den-sporta/
 
-A learning project for the AI Fluency course. Project plan: [project-plan.md](project-plan.md).
+A learning project for the AI Fluency course.
 
 Data is stored only in your browser (localStorage) and is never sent anywhere. The app loads nothing from other servers: the font ([Onest](https://github.com/googlefonts/onest), SIL Open Font License) is included in `fonts/`.
