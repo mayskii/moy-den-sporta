@@ -203,6 +203,58 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .week-col .seg:last-child { border-radius: 4px 4px 0 0; } /* rounded top end, square at the baseline */
 .week-detail { margin: 0; font-size: 14px; color: var(--muted); min-height: 1.45em; }
 
+/* ---------- Today header with the settings button ---------- */
+.today-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.icon-btn { display: grid; place-items: center; flex: none; }
+.icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Settings ---------- */
+.settings-header { display: flex; align-items: center; gap: 12px; }
+
+.stepper { display: flex; align-items: center; gap: 20px; }
+.stepper-value { min-width: 2ch; text-align: center; font-size: 32px; font-weight: 700; }
+
+.edit-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.edit-row { display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.edit-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.edit-fields, .add-form { display: grid; grid-template-columns: 1fr 6.5em; gap: 8px; }
+.add-form .primary-btn { grid-column: 1 / -1; }
+.edit-actions { display: flex; gap: 8px; }
+.edit-actions .danger { margin-left: auto; }
+
+.field {
+  width: 100%; min-width: 0; min-height: 44px;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--fg);
+  font: inherit; font-size: 16px; /* 16px stops iPhone from zooming in on focus */
+}
+.field::placeholder { color: var(--muted); }
+.field:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+
+.small-btn, .primary-btn, .secondary-btn {
+  min-height: 40px; padding: 0 14px; border-radius: 10px;
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.small-btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); min-width: 44px; }
+.small-btn:disabled { opacity: .35; cursor: default; }
+.small-btn.danger { color: var(--missed); }
+.primary-btn { border: 0; background: var(--accent); color: var(--on-accent); }
+.primary-btn.danger-fill { background: var(--missed); color: var(--on-day); }
+.secondary-btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.small-btn:focus-visible, .primary-btn:focus-visible, .secondary-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the label works as the button for the hidden file input */
+#backup-file:focus-visible + .secondary-btn, .secondary-btn:has(+ #backup-file:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.removed-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; color: var(--muted); }
+
+.backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.backup-msg { margin: 0; font-size: 14px; color: var(--muted); }
+.backup-msg:empty { display: none; }
+
+/* hides an element visually but keeps it usable (for the file input) */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 /* ---------- Bottom tab bar ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0;

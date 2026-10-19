@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=5">
-<script src="app.js?v=5" defer></script>
+<link rel="stylesheet" href="style.css?v=6">
+<script src="app.js?v=6" defer></script>
 </head>
 <body>
 
@@ -19,9 +19,14 @@
 
   <!-- Today tab -->
   <section class="view" id="view-today">
-    <header>
-      <p class="weekday" id="weekday"></p>
-      <h1 class="date" id="date"></h1>
+    <header class="today-header">
+      <div>
+        <p class="weekday" id="weekday"></p>
+        <h1 class="date" id="date"></h1>
+      </div>
+      <button type="button" class="icon-btn" id="open-settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </header>
 
     <div class="progress" aria-live="polite">
@@ -94,6 +99,55 @@
         <li><span class="dot missed"></span>Missed</li>
       </ul>
       <p class="week-detail" id="week-detail" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Settings (opened with ⚙ on Today) -->
+  <section class="view" id="view-settings" hidden>
+    <header class="settings-header">
+      <button type="button" class="icon-btn" id="close-settings" aria-label="Back to Today">‹</button>
+      <h1 class="cal-title">Settings</h1>
+    </header>
+
+    <div class="card">
+      <h2 class="card-title">Daily goal</h2>
+      <p class="card-sub">Exercises to do each day. A change applies from today; past days keep their goal.</p>
+      <div class="stepper">
+        <button type="button" class="icon-btn" id="goal-minus" aria-label="Lower goal">−</button>
+        <span class="stepper-value" id="goal-value" aria-live="polite"></span>
+        <button type="button" class="icon-btn" id="goal-plus" aria-label="Raise goal">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Exercises</h2>
+      <ul class="edit-list" id="ex-edit"></ul>
+      <form class="add-form" id="add-form">
+        <input class="field" id="add-name" type="text" placeholder="New exercise" aria-label="New exercise name" maxlength="40">
+        <input class="field dose-field" id="add-dose" type="text" placeholder="Amount" aria-label="Amount, e.g. 10 min" maxlength="20">
+        <button type="submit" class="primary-btn">Add</button>
+      </form>
+    </div>
+
+    <div class="card" id="removed-box" hidden>
+      <h2 class="card-title">Removed</h2>
+      <p class="card-sub">Hidden from Today. Their past checkmarks still count in Calendar and Stats.</p>
+      <ul class="edit-list" id="removed-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Backup</h2>
+      <p class="card-sub">Your data lives only on this device. Save a backup file to move it to a new phone or keep it safe.</p>
+      <div class="backup-actions">
+        <button type="button" class="primary-btn" id="backup-download">Download backup</button>
+        <label class="secondary-btn" for="backup-file">Restore from file</label>
+        <input type="file" id="backup-file" accept=".json,application/json" class="visually-hidden">
+      </div>
+      <p class="backup-msg" id="backup-msg" aria-live="polite"></p>
+      <div class="backup-actions" id="restore-confirm" hidden>
+        <button type="button" class="primary-btn danger-fill" id="restore-yes">Replace my data</button>
+        <button type="button" class="secondary-btn" id="restore-no">Cancel</button>
+      </div>
     </div>
   </section>
 
