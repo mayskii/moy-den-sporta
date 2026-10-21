@@ -88,6 +88,12 @@ body {
 .progress-text { min-width: 0; }
 .progress-text p { margin: 0; }
 .status { font-size: 20px; font-weight: 700; line-height: 1.25; text-wrap: balance; }
+/* goal reached: accent-colored card, light ring and text on it */
+.progress { transition: background .3s, border-color .3s; }
+.progress.done { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.progress.done .ring-track { stroke: color-mix(in srgb, var(--on-accent) 25%, transparent); }
+.progress.done .ring-fill { stroke: var(--on-accent); }
+.progress.done .ring-label span, .progress.done .count { color: inherit; opacity: .8; }
 .count { margin-top: 4px !important; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Exercise list */

@@ -159,10 +159,14 @@ function renderToday() {
   document.getElementById("ring-goal").textContent = `/${goal}`;
 
   const status = document.getElementById("status");
-  if (count >= goal) status.textContent = "Goal reached";
+  if (count >= goal) status.textContent = "Goal reached 🎉";
   else if (count > 0) status.textContent = `${goal - count} more to go`;
   else status.textContent = "Let's get moving";
-  document.getElementById("count").textContent = `${count} of ${goal} exercises done`;
+  document.getElementById("count").textContent = count > goal
+    ? `${count} exercises done · +${count - goal} extra`
+    : `${count} of ${goal} exercises done`;
+  // goal reached: the whole card turns accent-colored
+  document.getElementById("progress").classList.toggle("done", count >= goal);
 
   // Exercise list
   const list = document.getElementById("list");
