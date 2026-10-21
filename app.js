@@ -125,13 +125,17 @@ function dayStatus(key) {
 // ---------- 5. Checking an exercise ----------
 // Tapping a card adds the exercise to today's done list,
 // or removes it if it was already checked. Only today can be changed.
+// justToggled remembers which card was tapped, so only its checkmark animates.
+let justToggled = null;
 function toggle(id) {
   const key = dayKey(new Date());
   const done = new Set(state.days[key] || []);
   done.has(id) ? done.delete(id) : done.add(id);
   state.days[key] = [...done];
   save();
+  justToggled = id;
   renderToday();
+  justToggled = null;
 }
 
 // ---------- 6. Today tab ----------
@@ -168,7 +172,7 @@ function renderToday() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.id = "ex-" + ex.id;
-    btn.className = "item";
+    btn.className = "item" + (ex.id === justToggled ? " pop" : "");
     btn.setAttribute("aria-pressed", done.has(ex.id));
     btn.innerHTML = `<span class="check">${CHECK_ICON}</span><span class="name"></span><span class="dose"></span>`;
     btn.querySelector(".name").textContent = ex.name;

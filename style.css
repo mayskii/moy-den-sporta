@@ -104,11 +104,18 @@ body {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background .2s, border-color .2s;
+  transition: background .2s, border-color .2s, transform .1s;
   -webkit-tap-highlight-color: transparent;
 }
 .item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) { .item:hover { border-color: var(--accent); } } /* only on devices with a mouse */
+.item:active { transform: scale(.98); }
 .item[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; }
+/* done: the name fades, so what's left stands out */
+.item[aria-pressed="true"] .name { color: var(--muted); }
+/* the card that was just checked: its checkmark pops */
+.item.pop[aria-pressed="true"] .check { animation: pop .35s ease-out; }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
 .check {
   flex: none; width: 26px; height: 26px; border-radius: 50%;
@@ -294,4 +301,4 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tab[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
 .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
