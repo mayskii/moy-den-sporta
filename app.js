@@ -148,15 +148,17 @@ function renderToday() {
   document.getElementById("weekday").textContent = now.toLocaleDateString("en-US", { weekday: "long" });
   document.getElementById("date").textContent = now.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 
-  // Progress: "2 of 3" and a bar with one segment per goal step
-  document.getElementById("count").textContent = `${Math.min(count, goal)} of ${goal}` + (count > goal ? ` · ${count} total` : "");
-  const status = document.getElementById("status");
-  if (count >= goal) { status.textContent = "Goal reached"; status.className = "status done"; }
-  else if (count > 0) { status.textContent = `${goal - count} to go`; status.className = "status"; }
-  else { status.textContent = "Nothing yet"; status.className = "status"; }
+  // Progress: the ring fills by the share of the goal done (100 = full circle), "2/3" inside it
+  const shown = Math.min(count, goal);
+  document.getElementById("ring-fill").style.strokeDashoffset = 100 - (shown / goal) * 100;
+  document.getElementById("ring-count").textContent = shown;
+  document.getElementById("ring-goal").textContent = `/${goal}`;
 
-  document.getElementById("steps").innerHTML =
-    Array.from({ length: goal }, (_, i) => `<span class="step${i < count ? " on" : ""}"></span>`).join("");
+  const status = document.getElementById("status");
+  if (count >= goal) status.textContent = "Goal reached";
+  else if (count > 0) status.textContent = `${goal - count} more to go`;
+  else status.textContent = "Let's get moving";
+  document.getElementById("count").textContent = `${count} of ${goal} exercises done`;
 
   // Exercise list
   const list = document.getElementById("list");

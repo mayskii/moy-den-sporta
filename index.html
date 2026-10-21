@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="My Day">
 <title>My Workout Day</title>
 <link rel="preload" href="fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=7">
-<script src="app.js?v=7" defer></script>
+<link rel="stylesheet" href="style.css?v=8">
+<script src="app.js?v=8" defer></script>
 </head>
 <body>
 
@@ -27,12 +27,19 @@
       </button>
     </header>
 
-    <div class="progress" aria-live="polite">
-      <div class="progress-row">
-        <span class="count" id="count"></span>
-        <span class="status" id="status"></span>
+    <!-- Progress card: a ring that fills toward the daily goal, and a short message next to it -->
+    <div class="progress" id="progress" aria-live="polite">
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <circle class="ring-track" cx="60" cy="60" r="52"/>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52" pathLength="100"/>
+        </svg>
+        <span class="ring-label"><b id="ring-count"></b><span id="ring-goal"></span></span>
       </div>
-      <div class="steps" id="steps"></div>
+      <div class="progress-text">
+        <p class="status" id="status"></p>
+        <p class="count" id="count"></p>
+      </div>
     </div>
 
     <ul class="list" id="list"></ul>

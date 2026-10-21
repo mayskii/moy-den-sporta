@@ -68,15 +68,27 @@ body {
 .weekday { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .date { margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
 
-/* Progress toward the daily goal */
-.progress { display: flex; flex-direction: column; gap: 10px; }
-.progress-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.count { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.status { font-size: 14px; color: var(--muted); }
-.status.done { color: var(--accent); font-weight: 600; }
-.steps { display: flex; gap: 6px; }
-.step { flex: 1; height: 6px; border-radius: 3px; background: var(--line); transition: background .25s; }
-.step.on { background: var(--accent); }
+/* Progress card: ring on the left, message on the right */
+.progress {
+  display: flex; align-items: center; gap: 20px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+.ring { position: relative; flex: none; width: 96px; height: 96px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); } /* start the fill at 12 o'clock */
+.ring circle { fill: none; stroke-width: 10; }
+.ring-track { stroke: var(--line); }
+/* pathLength="100" in the HTML: dash 100 = the whole circle, offset 100 = empty, 0 = full */
+.ring-fill { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset .5s ease; }
+.ring-label { position: absolute; inset: 0; display: grid; place-content: center; grid-auto-flow: column; align-items: baseline; font-variant-numeric: tabular-nums; }
+.ring-label b { font-size: 32px; font-weight: 700; letter-spacing: -.02em; }
+.ring-label span { font-size: 16px; font-weight: 600; color: var(--muted); }
+.progress-text { min-width: 0; }
+.progress-text p { margin: 0; }
+.status { font-size: 20px; font-weight: 700; line-height: 1.25; text-wrap: balance; }
+.count { margin-top: 4px !important; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Exercise list */
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
