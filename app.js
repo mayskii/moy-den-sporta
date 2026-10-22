@@ -399,6 +399,91 @@ for (const p of ["week", "month", "all"]) {
   document.getElementById("period-" + p).addEventListener("click", () => { statsPeriod = p; renderStats(); });
 }
 
+// ---------- 8b. Streak tab ----------
+// A streak is a run of green days in a row. A yellow or red day breaks it.
+// Today doesn't break it while it's still going: until the goal is reached,
+// the streak counts up to yesterday, and the message says how many are left.
+
+// Current streak: counts green days backwards, from today (if green) or from yesterday.
+function currentStreak() {
+  const today = dayKey(new Date());
+  let k = dayStatus(today) === "good" ? today : addDays(today, -1);
+  let n = 0;
+  while (k >= state.startedOn && dayStatus(k) === "good") { n++; k = addDays(k, -1); }
+  return n;
+}
+
+// Best streak ever: the longest run of green days, with its first and last day.
+function bestStreak() {
+  const today = dayKey(new Date());
+  let best = { n: 0, from: null, to: null };
+  let n = 0, from = null;
+  for (let k = state.startedOn; k <= today; k = addDays(k, 1)) {
+    if (dayStatus(k) === "good") {
+      if (n === 0) from = k;
+      n++;
+      if (n > best.n) best = { n, from, to: k };
+    } else n = 0;
+  }
+  return best;
+}
+
+function renderStreak() {
+  const now = new Date();
+  const today = dayKey(now);
+  const streak = currentStreak();
+  const best = bestStreak();
+  const left = goalFor(today) - doneCount(today);
+  const doneToday = left <= 0;
+  const daysWord = n => (n === 1 ? "day" : "days");
+  const fmt = k => keyToDate(k).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  document.getElementById("streak-weekday").textContent =
+    now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  // Big number
+  document.getElementById("streak-count").textContent = streak;
+  document.getElementById("streak-label").textContent = `${daysWord(streak)} in a row`;
+
+  // Best streak
+  document.getElementById("best-count").textContent = best.n;
+  document.getElementById("best-unit").textContent = daysWord(best.n);
+  document.getElementById("best-dates").textContent = !best.n ? "No streak yet"
+    : best.n === 1 ? fmt(best.from)
+    : `${fmt(best.from)} – ${fmt(best.to)}`;
+
+  // Last 7 days, oldest on the left
+  const dots = document.getElementById("week-dots");
+  dots.innerHTML = "";
+  for (let i = 6; i >= 0; i--) {
+    const k = addDays(today, -i);
+    const status = dayStatus(k);
+    const li = document.createElement("li");
+    if (k === today) li.className = "today";
+    const dot = document.createElement("span");
+    dot.className = "week-dot " + status;
+    const name = keyToDate(k).toLocaleDateString("en-US", { weekday: "long" });
+    li.setAttribute("aria-label", `${name}: ${STATUS_TEXT[status] || "Not tracked"}`);
+    li.append(dot, name[0]); // first letter: M, T, W…
+    dots.appendChild(li);
+  }
+
+  // Message
+  let title, body;
+  if (doneToday) {
+    title = streak === 1 ? "Day one done." : `${streak} days strong.`;
+    body = "Same time tomorrow — small steps add up.";
+  } else if (streak > 0) {
+    title = `${left} more and it's ${streak + 1}.`;
+    body = "Finish today's exercises to keep the streak going.";
+  } else {
+    title = "Start a streak today.";
+    body = `Do ${left} ${left === 1 ? "exercise" : "exercises"} to make today day one.`;
+  }
+  document.getElementById("streak-msg-title").textContent = title;
+  document.getElementById("streak-msg-body").textContent = body;
+}
+
 // ---------- 9. Settings ----------
 // Opened with the ⚙ button on Today. Every change is saved immediately.
 
@@ -591,8 +676,8 @@ document.getElementById("restore-no").addEventListener("click", () => {
 // ---------- 11. Tabs ----------
 // Only one section is visible at a time; the others get the "hidden" attribute.
 // Settings isn't a tab: it opens from Today, and "Back" returns there.
-const VIEWS = ["today", "calendar", "stats", "settings"];
-const TABS = ["today", "calendar", "stats"];
+const VIEWS = ["today", "calendar", "streak", "stats", "settings"];
+const TABS = ["today", "calendar", "streak", "stats"];
 let currentView = "today";
 
 function showView(name) {
@@ -611,6 +696,7 @@ function showView(name) {
     selectedKey = null;
     renderCalendar();
   }
+  if (name === "streak") renderStreak();
   if (name === "stats") { selectedWeek = null; renderStats(); }
   if (name === "settings") { confirmRemoveId = null; showBackupMessage(""); renderSettings(); }
   window.scrollTo(0, 0);
@@ -626,6 +712,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   if (currentView === "today") renderToday();
   if (currentView === "calendar") renderCalendar();
+  if (currentView === "streak") renderStreak();
   if (currentView === "stats") renderStats();
 });
 
