@@ -4,6 +4,13 @@ A simple, free phone web app for daily exercise: check off what you did today, a
 
 **Live:** https://mayskii.github.io/moy-den-sporta/ (works best on a phone; you can add it to your home screen)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screens-dark.png">
+  <img alt="Today, Calendar, Streak and Stats screens of My Workout Day" src="docs/screens-light.png">
+</picture>
+
+<sub>Screens with demo data. The app has light and dark themes and follows your phone's setting.</sub>
+
 ## Why
 
 Almost every workout app I found wanted a paid subscription. I wanted something simple and free that I could use every day and share with others. No sign-up, no ads, no subscription.
@@ -40,6 +47,8 @@ This is only the beginning. Next, I want to give the app to a few people, listen
 ## Tech
 
 Plain HTML, CSS and JavaScript (`index.html`, `style.css`, `app.js`): no frameworks and no build step. Hosted on GitHub Pages.
+
+**Lighthouse** (live site, mobile, October 2026): Performance 100 · Accessibility 100 · Best Practices 100 · SEO 100. On a simulated mid-range phone with slow 4G, the main content appears in 1.2 s.
 
 To run it locally, open `index.html` in a browser, or start a small server:
 
