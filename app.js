@@ -1,126 +1,24 @@
-// ---------- 1. Default data ----------
-// The starting exercise library. Each exercise has an id (internal name, never changes),
-// a display name and a "dose" — how much to do. You can edit all of this in Settings.
-const DEFAULT_EXERCISES = [
-  { id: "walk",    name: "Walk",         dose: "30 min" },
-  { id: "squats",  name: "Squats",       dose: "×10" },
-  { id: "pushups", name: "Push-ups",     dose: "×10" },
-  { id: "plank",   name: "Plank",        dose: "1 min" },
-  { id: "qigong",  name: "Qigong",       dose: "30 min" },
-  { id: "face",    name: "Face yoga",    dose: "30 min" },
-  { id: "stretch", name: "Stretching",   dose: "5 min" },
-];
-const DEFAULT_GOAL = 3; // daily goal: how many exercises to do
+// The page: draws the tabs and reacts to taps.
+// The calculations live in js/logic.js, dates in js/dates.js, saving in js/storage.js.
+import { dayKey, todayKey, keyToDate, addDays, mondayOf } from "./js/dates.js";
+import {
+  parseBackup, goalFor, activeExercises, doneCount, dayStatus, countDays,
+  periodStart, exerciseCounts, currentStreak, bestStreak,
+  toggleDone, setGoal as setGoalIn, moveExercise as moveExerciseIn,
+  removeExercise as removeExerciseIn, restoreExercise as restoreExerciseIn, addExercise as addExerciseIn,
+} from "./js/logic.js";
+import { load, save as saveState } from "./js/storage.js";
 
-// ---------- 2. Storage ----------
-// The whole app is stored as one object in the browser's memory (localStorage):
-// {
-//   exercises: [{ id, name, dose, removed? }],  — the library; removed ones stay for history
-//   goals: [{ from: "2026-10-16", goal: 3 }],   — goal history: each day is judged by the goal of that day
-//   startedOn: "2026-10-16",                    — first day of using the app
-//   days: { "2026-10-16": ["walk", "plank"] }   — what was checked on which day
-// }
-// Days are stored by exercise id, so renaming an exercise keeps its history.
-const STORAGE_KEY = "moy-den-sporta";
-let storageWorks = true;
-
-// Turns whatever was saved (or loaded from a backup file) into a complete, valid state.
-// Older saves had a single "goal" and no exercise list — they are upgraded here.
-function normalize(saved) {
-  const s = saved && typeof saved === "object" ? saved : {};
-  const days = s.days && typeof s.days === "object" ? s.days : {};
-  const startedOn = typeof s.startedOn === "string" ? s.startedOn
-    : (Object.keys(days).sort()[0] || dayKey(new Date()));
-
-  const exercises = Array.isArray(s.exercises) && s.exercises.length
-    ? s.exercises.filter(ex => ex && ex.id && typeof ex.name === "string")
-        .map(ex => ({ id: String(ex.id), name: ex.name, dose: String(ex.dose || ""), ...(ex.removed ? { removed: true } : {}) }))
-    : DEFAULT_EXERCISES.map(ex => ({ ...ex }));
-
-  const goals = Array.isArray(s.goals) && s.goals.length
-    ? s.goals.filter(g => g && typeof g.from === "string" && g.goal >= 1)
-    : [{ from: startedOn, goal: s.goal || DEFAULT_GOAL }];
-
-  return { exercises, goals, startedOn, days };
-}
-
-function load() {
-  try { return normalize(JSON.parse(localStorage.getItem(STORAGE_KEY))); }
-  catch (e) { storageWorks = false; return normalize(null); }
-}
-
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); storageWorks = true; }
-  catch (e) { storageWorks = false; }
-}
-
-// ---------- 3. Dates ----------
-// A day's key is the date as YYYY-MM-DD in the phone's local time.
-// Keys in this format sort and compare correctly as plain text: "2026-10-09" < "2026-10-16".
-function dayKey(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-// Turns "2026-10-16" back into a Date (noon, so time zones can't shift the day).
-function keyToDate(key) {
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d, 12);
-}
-
-// Adds n days to a day key: addDays("2026-10-31", 1) → "2026-11-01"
-function addDays(key, n) {
-  const d = keyToDate(key);
-  d.setDate(d.getDate() + n);
-  return dayKey(d);
-}
-
-// Monday of the week that contains the given day
-function mondayOf(key) {
-  const d = keyToDate(key);
-  return addDays(key, -((d.getDay() + 6) % 7));
-}
-
-let state = load();
+let { state, works: storageWorks } = load(todayKey());
 save(); // stores the upgraded format on the very first visit
 
-// ---------- 4. Day results ----------
-// The goal that was in force on a given day: the last change made on or before it.
-function goalFor(key) {
-  let goal = state.goals[0].goal;
-  for (const g of state.goals) if (g.from <= key) goal = g.goal;
-  return goal;
+function save() {
+  storageWorks = saveState(state);
 }
 
-// Exercises shown on Today and in Settings (removed ones are hidden but keep their history)
-function activeExercises() {
-  return state.exercises.filter(ex => !ex.removed);
-}
-
-// How many exercises from the library (including removed ones) were checked on a given day.
-function doneCount(key) {
-  const ids = new Set(state.days[key] || []);
-  return state.exercises.filter(ex => ids.has(ex.id)).length;
-}
-
-// The color of a day in the calendar:
-//   "future"  — hasn't happened yet
-//   "before"  — before you started using the app (grey, never red)
-//   "good"    — goal reached (green)
-//   "partial" — some done (yellow)
-//   "missed"  — a past day with nothing done (red)
-//   "pending" — today with nothing done yet (no color: the day isn't over)
-function dayStatus(key) {
-  const today = dayKey(new Date());
-  if (key > today) return "future";
-  if (key < state.startedOn) return "before";
-  const n = doneCount(key);
-  if (n >= goalFor(key)) return "good";
-  if (n > 0) return "partial";
-  return key === today ? "pending" : "missed";
-}
+// Shortcuts: the same calculations for the current state and today
+const goalOn = key => goalFor(state, key);
+const statusOf = key => dayStatus(state, key, todayKey());
 
 // ---------- 5. Checking an exercise ----------
 // Tapping a card adds the exercise to today's done list,
@@ -128,10 +26,7 @@ function dayStatus(key) {
 // justToggled remembers which card was tapped, so only its checkmark animates.
 let justToggled = null;
 function toggle(id) {
-  const key = dayKey(new Date());
-  const done = new Set(state.days[key] || []);
-  done.has(id) ? done.delete(id) : done.add(id);
-  state.days[key] = [...done];
+  toggleDone(state, todayKey(), id);
   save();
   justToggled = id;
   renderToday();
@@ -143,10 +38,10 @@ const CHECK_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l
 
 function renderToday() {
   const now = new Date();
-  const key = dayKey(now);
+  const key = todayKey();
   const done = new Set(state.days[key] || []);
-  const count = doneCount(key);
-  const goal = goalFor(key);
+  const count = doneCount(state, key);
+  const goal = goalOn(key);
 
   // Date
   document.getElementById("weekday").textContent = now.toLocaleDateString("en-US", { weekday: "long" });
@@ -171,7 +66,7 @@ function renderToday() {
   // Exercise list
   const list = document.getElementById("list");
   list.innerHTML = "";
-  for (const ex of activeExercises()) {
+  for (const ex of activeExercises(state)) {
     const li = document.createElement("li");
     const btn = document.createElement("button");
     btn.type = "button";
@@ -209,7 +104,7 @@ function renderCalendar() {
   const first = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate(); // day 0 of next month = last day of this one
   const offset = (first.getDay() + 6) % 7; // getDay(): 0 = Sunday; we start weeks on Monday
-  const todayKey = dayKey(new Date());
+  const today = todayKey();
 
   document.getElementById("cal-title").textContent =
     first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -222,11 +117,11 @@ function renderCalendar() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const key = dayKey(new Date(calYear, calMonth, d));
-    const status = dayStatus(key);
+    const status = statusOf(key);
     // Days you can open: from the start date up to today
     const canOpen = status !== "future" && status !== "before";
     const cell = document.createElement(canOpen ? "button" : "span");
-    cell.className = `day ${status}` + (key === todayKey ? " today" : "") + (key === selectedKey ? " selected" : "");
+    cell.className = `day ${status}` + (key === today ? " today" : "") + (key === selectedKey ? " selected" : "");
     cell.textContent = d;
     if (canOpen) {
       cell.type = "button";
@@ -259,7 +154,7 @@ function renderDayDetail() {
   const h = document.createElement("h2");
   h.textContent = keyToDate(selectedKey).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const p = document.createElement("p");
-  p.textContent = `${STATUS_TEXT[dayStatus(selectedKey)]} · ${done.length} of ${goalFor(selectedKey)}`;
+  p.textContent = `${STATUS_TEXT[statusOf(selectedKey)]} · ${done.length} of ${goalOn(selectedKey)}`;
   box.append(h, p);
 
   if (done.length) {
@@ -286,33 +181,18 @@ document.getElementById("cal-next").addEventListener("click", () => shiftMonth(1
 // ---------- 8. Stats tab ----------
 let statsPeriod = "week"; // "week" | "month" | "all"
 
-// Counts green / yellow / red days from one day to another (both included).
-// Days before the start date and today-with-nothing-yet ("pending") are not counted:
-// the first didn't exist for you, the second isn't over.
-function countDays(fromKey, toKey) {
-  const result = { good: 0, partial: 0, missed: 0 };
-  for (let k = fromKey; k <= toKey; k = addDays(k, 1)) {
-    const s = dayStatus(k);
-    if (s in result) result[s]++;
-  }
-  return result;
-}
-
 function renderStats() {
-  const today = dayKey(new Date());
+  const today = todayKey();
 
   // 1) Period: from its first day (but never before startedOn) up to today
-  let from = state.startedOn;
-  if (statsPeriod === "week") from = mondayOf(today);
-  if (statsPeriod === "month") from = today.slice(0, 8) + "01"; // "2026-10-19" → "2026-10-01"
-  if (from < state.startedOn) from = state.startedOn;
+  const from = periodStart(state, statsPeriod, today);
 
   for (const p of ["week", "month", "all"]) {
     document.getElementById("period-" + p).setAttribute("aria-pressed", p === statsPeriod);
   }
 
   // 2) Headline: share of counted days where the goal was reached
-  const c = countDays(from, today);
+  const c = countDays(state, from, today, today);
   const total = c.good + c.partial + c.missed;
   document.getElementById("hero-value").textContent = total ? Math.round(c.good / total * 100) + "%" : "–";
   document.getElementById("hero-sub").textContent = total
@@ -320,11 +200,7 @@ function renderStats() {
     : "No finished days yet in this period";
 
   // 3) Times each current exercise was done in the period, most frequent first
-  const counts = activeExercises().map(ex => {
-    let n = 0;
-    for (let k = from; k <= today; k = addDays(k, 1)) if ((state.days[k] || []).includes(ex.id)) n++;
-    return { ex, n };
-  }).sort((a, b) => b.n - a.n);
+  const counts = exerciseCounts(state, from, today);
   const max = Math.max(1, ...counts.map(x => x.n));
 
   const bars = document.getElementById("ex-bars");
@@ -356,7 +232,7 @@ function renderWeeks(today) {
   for (let i = 7; i >= 0; i--) {
     const mon = addDays(thisMonday, -7 * i);
     const sun = addDays(mon, 6);
-    const c = countDays(mon, sun < today ? sun : today);
+    const c = countDays(state, mon, sun < today ? sun : today, today);
     const label = keyToDate(mon).toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
 
     const btn = document.createElement("button");
@@ -404,36 +280,12 @@ for (const p of ["week", "month", "all"]) {
 // Today doesn't break it while it's still going: until the goal is reached,
 // the streak counts up to yesterday, and the message says how many are left.
 
-// Current streak: counts green days backwards, from today (if green) or from yesterday.
-function currentStreak() {
-  const today = dayKey(new Date());
-  let k = dayStatus(today) === "good" ? today : addDays(today, -1);
-  let n = 0;
-  while (k >= state.startedOn && dayStatus(k) === "good") { n++; k = addDays(k, -1); }
-  return n;
-}
-
-// Best streak ever: the longest run of green days, with its first and last day.
-function bestStreak() {
-  const today = dayKey(new Date());
-  let best = { n: 0, from: null, to: null };
-  let n = 0, from = null;
-  for (let k = state.startedOn; k <= today; k = addDays(k, 1)) {
-    if (dayStatus(k) === "good") {
-      if (n === 0) from = k;
-      n++;
-      if (n > best.n) best = { n, from, to: k };
-    } else n = 0;
-  }
-  return best;
-}
-
 function renderStreak() {
   const now = new Date();
-  const today = dayKey(now);
-  const streak = currentStreak();
-  const best = bestStreak();
-  const left = goalFor(today) - doneCount(today);
+  const today = todayKey();
+  const streak = currentStreak(state, today);
+  const best = bestStreak(state, today);
+  const left = goalOn(today) - doneCount(state, today);
   const doneToday = left <= 0;
   const daysWord = n => (n === 1 ? "day" : "days");
   const fmt = k => keyToDate(k).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -457,7 +309,7 @@ function renderStreak() {
   dots.innerHTML = "";
   for (let i = 6; i >= 0; i--) {
     const k = addDays(today, -i);
-    const status = dayStatus(k);
+    const status = statusOf(k);
     const li = document.createElement("li");
     if (k === today) li.className = "today";
     const dot = document.createElement("span");
@@ -489,24 +341,14 @@ function renderStreak() {
 
 // Changes the goal starting today. Past days keep the goal they had.
 function setGoal(n) {
-  const today = dayKey(new Date());
-  const last = state.goals[state.goals.length - 1];
-  if (last.from === today) last.goal = n;          // changed again today: just update today's entry
-  else state.goals.push({ from: today, goal: n }); // otherwise: a new entry from today on
+  setGoalIn(state, todayKey(), n);
   save();
   renderSettings();
 }
 
 // Moves an exercise up (-1) or down (+1) among the active ones
 function moveExercise(id, dir) {
-  const active = activeExercises();
-  const i = active.findIndex(ex => ex.id === id);
-  const j = i + dir;
-  if (j < 0 || j >= active.length) return;
-  // swap the two exercises inside the full list (which also contains removed ones)
-  const a = state.exercises.indexOf(active[i]);
-  const b = state.exercises.indexOf(active[j]);
-  [state.exercises[a], state.exercises[b]] = [state.exercises[b], state.exercises[a]];
+  moveExerciseIn(state, id, dir);
   save();
   renderSettings();
 }
@@ -514,33 +356,27 @@ function moveExercise(id, dir) {
 let confirmRemoveId = null; // the exercise whose "Remove" was tapped once and waits for confirmation
 
 function removeExercise(id) {
-  const ex = state.exercises.find(e => e.id === id);
-  ex.removed = true; // hidden from Today and Settings, history stays in Calendar and Stats
+  removeExerciseIn(state, id, todayKey()); // also lowers the goal if fewer exercises are left
   confirmRemoveId = null;
-  // the goal can't be bigger than the number of exercises left
-  const left = activeExercises().length;
-  if (goalFor(dayKey(new Date())) > left) return setGoal(left); // setGoal saves and redraws
   save();
   renderSettings();
 }
 
 function restoreExercise(id) {
-  delete state.exercises.find(e => e.id === id).removed;
+  restoreExerciseIn(state, id);
   save();
   renderSettings();
 }
 
 function addExercise(name, dose) {
-  const id = "ex" + Date.now().toString(36); // a new unique id, e.g. "exmgf3k2a1"
-  state.exercises.push({ id, name, dose });
+  addExerciseIn(state, name, dose);
   save();
   renderSettings();
 }
 
 function renderSettings() {
-  const today = dayKey(new Date());
-  const active = activeExercises();
-  const goal = goalFor(today);
+  const active = activeExercises(state);
+  const goal = goalOn(todayKey());
 
   // Daily goal stepper: from 1 up to the number of exercises you have
   document.getElementById("goal-value").textContent = goal;
@@ -609,8 +445,8 @@ function renderSettings() {
   }
 }
 
-document.getElementById("goal-minus").addEventListener("click", () => setGoal(goalFor(dayKey(new Date())) - 1));
-document.getElementById("goal-plus").addEventListener("click", () => setGoal(goalFor(dayKey(new Date())) + 1));
+document.getElementById("goal-minus").addEventListener("click", () => setGoal(goalOn(todayKey()) - 1));
+document.getElementById("goal-plus").addEventListener("click", () => setGoal(goalOn(todayKey()) + 1));
 
 document.getElementById("add-form").addEventListener("submit", e => {
   e.preventDefault(); // stay on the page instead of "sending" the form
@@ -631,7 +467,7 @@ document.getElementById("backup-download").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `my-workout-day-backup-${dayKey(new Date())}.json`;
+  a.download = `my-workout-day-backup-${todayKey()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -646,13 +482,11 @@ document.getElementById("backup-file").addEventListener("change", async e => {
   e.target.value = ""; // so choosing the same file again still works
   if (!file) return;
   try {
-    const data = JSON.parse(await file.text());
-    if (!data || typeof data.days !== "object") throw new Error("not a backup");
-    pendingRestore = normalize(data);
+    pendingRestore = parseBackup(await file.text(), todayKey());
     const n = Object.keys(pendingRestore.days).length;
     showBackupMessage(`This file has ${n} ${n === 1 ? "day" : "days"} of data, starting ${pendingRestore.startedOn}. Restoring replaces everything on this device.`);
     document.getElementById("restore-confirm").hidden = false;
-  } catch (err) {
+  } catch {
     pendingRestore = null;
     document.getElementById("restore-confirm").hidden = true;
     showBackupMessage("This file isn't a My Workout Day backup. Choose a file named my-workout-day-backup-….json.");

@@ -1,19 +1,31 @@
 // Service worker: keeps a copy of the app's files on the phone so it opens without internet.
 // Your data is not here: it stays in localStorage, as before.
 
-const CACHE = "my-day-v1"; // change the name to drop all old copies at once
+const CACHE = "my-day-v2"; // change the name to drop all old copies at once
 
-// Files saved right when the app is installed. The ?v=N must match index.html.
+// Files saved right when the app is installed.
 const FILES = [
   "./",
-  "style.css?v=10",
-  "app.js?v=10",
+  "style.css",
+  "app.js",
+  "js/dates.js",
+  "js/logic.js",
+  "js/storage.js",
   "fonts/onest-latin.woff2",
   "icon.svg",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/apple-touch-icon.png"
 ];
+
+// One saved copy per file: "app.js?v=11" and "app.js" are the same file here.
+// The page itself ("./", "index.html", "?anything") is saved as "./".
+function cacheKey(req) {
+  if (req.mode === "navigate") return new URL("./", self.registration.scope).href;
+  const url = new URL(req.url);
+  url.search = "";
+  return url.href;
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)));
@@ -29,34 +41,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Network first: ask the server for the file ("no-cache" means: check it hasn't changed,
+// usually a quick "not modified" answer), so all files are always from the same version.
+// Without internet, open the saved copy.
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  const key = cacheKey(req);
 
-  // The page itself: try the network first, so a new version arrives right away;
-  // without internet, open the saved copy.
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put("./", copy));
-          return res;
-        })
-        .catch(() => caches.match("./"))
-    );
-    return;
-  }
-
-  // Other files (style.css?v=N, app.js?v=N, font, icons) never change under the same name,
-  // so the saved copy is used first and the network only for files not saved yet.
   event.respondWith(
-    caches.match(req).then((saved) => saved || fetch(req).then((res) => {
-      if (res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(req, copy));
-      }
-      return res;
-    }))
+    fetch(req, { cache: "no-cache" })
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(key, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(key).then((saved) => saved || Response.error()))
   );
 });
