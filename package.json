@@ -4,6 +4,12 @@
   "type": "module",
   "description": "A simple, free phone web app for daily exercise. No build step: these scripts are only for tests and lint.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0"
   }
 }

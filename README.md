@@ -1,5 +1,7 @@
 # My Workout Day
 
+[![Tests](https://github.com/mayskii/moy-den-sporta/actions/workflows/test.yml/badge.svg)](https://github.com/mayskii/moy-den-sporta/actions/workflows/test.yml)
+
 A simple, free phone web app for daily exercise: check off what you did today, aim for at least 3 exercises a day, and see your progress on a color calendar.
 
 **Live:** https://mayskii.github.io/moy-den-sporta/ (works best on a phone: install it to your home screen and it works offline)
@@ -47,16 +49,39 @@ This is only the beginning. Next, I want to give the app to a few people, listen
 
 ## Tech
 
-Plain HTML, CSS and JavaScript (`index.html`, `style.css`, `app.js`): no frameworks and no build step. Hosted on GitHub Pages.
+Plain HTML, CSS and JavaScript with ES modules: no frameworks and no build step. Hosted on GitHub Pages.
 
-It is a PWA: `manifest.webmanifest` describes the app (name, icons, colors) so phones can install it, and the service worker `sw.js` keeps a copy of the app's files on the device. The page is loaded from the network first, so updates arrive right away; offline, the saved copy opens. Styles and scripts have a version in their link (`app.js?v=10`), so they never change under the same name and can be served from the saved copy.
+```
+index.html          the page
+style.css           styles, light and dark theme
+app.js              the interface: draws the tabs and reacts to taps
+js/logic.js         day colors, goal history, streaks, stats, backup checks (no page, no storage)
+js/dates.js         day keys like "2026-10-23", adding days, Monday of a week
+js/storage.js       saving to localStorage
+sw.js               service worker: offline copy of the app
+tests/              tests for js/logic.js and js/dates.js
+```
+
+The logic gets the data and today's date as inputs instead of reading them itself, so the tests can check any situation: "today is Friday, the goal changed on Thursday, Tuesday was half done".
+
+**Tests.** 46 tests with Node's built-in test runner (`node:test`), no test libraries. GitHub Actions runs them and ESLint on every push. Writing them found real bugs in backup restore: a hand-edited backup file could bring in goals as text (so the + button turned 3 into 31) or goals that were all invalid, which made the app crash on every open. The restore code now cleans such files.
+
+**PWA.** `manifest.webmanifest` describes the app (name, icons, colors) so phones can install it. The service worker `sw.js` asks the network first, so all files always come from the same version, and keeps a copy of each file for when there is no internet.
 
 **Lighthouse** (live site, mobile, October 2026): Performance 97–100 (varies between runs) · Accessibility 100 · Best Practices 100 · SEO 100. On a simulated mid-range phone with slow 4G, the main content appears in about 1.2 s.
 
-To run it locally, open `index.html` in a browser, or start a small server:
+### Run it locally
+
+Browsers don't load modules from a file opened directly, so start a small server:
 
 ```bash
 python3 -m http.server
 ```
 
-Then open http://localhost:8000.
+Then open http://localhost:8000. To run the tests and ESLint (needs Node.js):
+
+```bash
+npm install
+npm test
+npm run lint
+```
