@@ -2,7 +2,7 @@
 
 A simple, free phone web app for daily exercise: check off what you did today, aim for at least 3 exercises a day, and see your progress on a color calendar.
 
-**Live:** https://mayskii.github.io/moy-den-sporta/ (works best on a phone; you can add it to your home screen)
+**Live:** https://mayskii.github.io/moy-den-sporta/ (works best on a phone: install it to your home screen and it works offline)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screens-dark.png">
@@ -23,6 +23,7 @@ Almost every workout app I found wanted a paid subscription. I wanted something 
 - **Stats:** share of days with the goal reached, how often each exercise was done, the last 8 weeks
 - **Settings:** change the daily goal, add, rename, reorder, remove and restore exercises
 - **Backup:** save all your data to a file and restore it later
+- **Installable and offline:** add it to your home screen and it opens like an app, even without internet
 - Light and dark themes; calendar colors chosen to stay distinct for colorblind users
 
 ## Privacy
@@ -48,7 +49,9 @@ This is only the beginning. Next, I want to give the app to a few people, listen
 
 Plain HTML, CSS and JavaScript (`index.html`, `style.css`, `app.js`): no frameworks and no build step. Hosted on GitHub Pages.
 
-**Lighthouse** (live site, mobile, October 2026): Performance 100 · Accessibility 100 · Best Practices 100 · SEO 100. On a simulated mid-range phone with slow 4G, the main content appears in 1.2 s.
+It is a PWA: `manifest.webmanifest` describes the app (name, icons, colors) so phones can install it, and the service worker `sw.js` keeps a copy of the app's files on the device. The page is loaded from the network first, so updates arrive right away; offline, the saved copy opens. Styles and scripts have a version in their link (`app.js?v=10`), so they never change under the same name and can be served from the saved copy.
+
+**Lighthouse** (live site, mobile, October 2026): Performance 97–100 (varies between runs) · Accessibility 100 · Best Practices 100 · SEO 100. On a simulated mid-range phone with slow 4G, the main content appears in about 1.2 s.
 
 To run it locally, open `index.html` in a browser, or start a small server:
 
