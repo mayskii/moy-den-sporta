@@ -28,10 +28,10 @@ I built this app during Anthropic's AI Fluency course, using Claude Code for the
 
 1. **Plan first.** Before any code, I planned the project with Claude. Its questions made me imagine real use, and that changed the main rule: not "finish the whole list every day," but "at least 3 exercises." I decided what stays with me (what the app does, judging it on my phone) and what Claude does (drafts, code, explanations).
 2. **Small steps.** Today screen → calendar → stats → settings and backup → streak. One step at a time, each one a separate commit.
-3. **Check after every step.** I tested each step on my phone and on a large screen, and asked Claude to explain each piece of code until I understood it. Testing caught real bugs, like the bottom of long tabs hiding under the tab bar.
+3. **Check after every step.** I tested each step on my phone and on a large screen, and asked Claude to explain each piece of code until I understood it. Claude's code looked right but had bugs: hidden tabs still showed, and the bottom of long tabs was cut off under the tab bar. I caught both by testing.
 4. **Design, then build.** The Streak tab was first sketched in Claude Design, then built in Claude Code with the app's own colors so it works in both themes.
 
-**What I learned:** short, precise answers ("1a, 2b") work much better than a vague "yes," and checking the result is harder than describing the task. Every check makes the next description better. Some things did not go to plan: building it "in an hour" was unrealistic, and file backup didn't work inside a Claude artifact, so I moved the project to my own files and GitHub Pages.
+**What I learned:** the more clearly I describe what I want, including how I will test it, the less Claude has to guess. Checking the result is harder than describing the task, and every check makes the next description better. Some things did not go to plan: building it "in an hour" was unrealistic, and file backup didn't work inside a Claude artifact, so I moved the project to my own files and GitHub Pages.
 
 ## What's next
 
