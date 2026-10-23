@@ -30,27 +30,49 @@ export const DEFAULT_GOAL = 3; // daily goal: how many exercises to do
 // Turns whatever was saved (or loaded from a backup file) into a complete, valid state.
 // Older saves had a single "goal" and no exercise list — they are upgraded here.
 export function normalize(saved, today) {
-  const s = saved && typeof saved === "object" ? saved : {};
-  const days = s.days && typeof s.days === "object" ? s.days : {};
-  const startedOn = typeof s.startedOn === "string" ? s.startedOn
-    : (Object.keys(days).sort()[0] || today);
+  const s = isPlainObject(saved) ? saved : {};
 
-  const exercises = Array.isArray(s.exercises) && s.exercises.length
+  // Only real days ("2026-10-16") with a list of exercise ids are kept.
+  const days = {};
+  if (isPlainObject(s.days)) {
+    for (const [key, ids] of Object.entries(s.days)) {
+      if (isDayKey(key) && Array.isArray(ids)) days[key] = ids.filter(id => typeof id === "string");
+    }
+  }
+  const startedOn = isDayKey(s.startedOn) ? s.startedOn : (Object.keys(days).sort()[0] || today);
+
+  let exercises = Array.isArray(s.exercises)
     ? s.exercises.filter(ex => ex && ex.id && typeof ex.name === "string")
         .map(ex => ({ id: String(ex.id), name: ex.name, dose: String(ex.dose || ""), ...(ex.removed ? { removed: true } : {}) }))
-    : DEFAULT_EXERCISES.map(ex => ({ ...ex }));
+    : [];
+  if (!exercises.length) exercises = DEFAULT_EXERCISES.map(ex => ({ ...ex }));
 
-  const goals = Array.isArray(s.goals) && s.goals.length
-    ? s.goals.filter(g => g && typeof g.from === "string" && g.goal >= 1)
-    : [{ from: startedOn, goal: s.goal || DEFAULT_GOAL }];
+  // Goals are whole numbers from 1, sorted by date: goalFor relies on that order.
+  let goals = Array.isArray(s.goals)
+    ? s.goals.filter(g => g && isDayKey(g.from) && Math.floor(Number(g.goal)) >= 1)
+        .map(g => ({ from: g.from, goal: Math.floor(Number(g.goal)) }))
+        .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0))
+    : [];
+  if (!goals.length) {
+    const old = Math.floor(Number(s.goal)); // older saves had a single goal
+    goals = [{ from: startedOn, goal: old >= 1 ? old : DEFAULT_GOAL }];
+  }
 
   return { exercises, goals, startedOn, days };
+}
+
+function isPlainObject(x) {
+  return x !== null && typeof x === "object" && !Array.isArray(x);
+}
+
+function isDayKey(x) {
+  return typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x);
 }
 
 // Reads a backup file's text. Returns a valid state, or throws if it isn't a backup.
 export function parseBackup(text, today) {
   const data = JSON.parse(text);
-  if (!data || typeof data.days !== "object") throw new Error("not a backup");
+  if (!isPlainObject(data) || !isPlainObject(data.days)) throw new Error("not a backup");
   return normalize(data, today);
 }
 

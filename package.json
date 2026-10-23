@@ -1,0 +1,9 @@
+{
+  "name": "my-workout-day",
+  "private": true,
+  "type": "module",
+  "description": "A simple, free phone web app for daily exercise. No build step: these scripts are only for tests and lint.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
