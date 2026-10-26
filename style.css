@@ -13,7 +13,7 @@
   --bg: #F3F6F5;          /* background: light, slightly green */
   --surface: #FFFFFF;     /* cards */
   --fg: #17201D;          /* main text */
-  --muted: #66736E;       /* secondary text */
+  --muted: #5A6762;       /* secondary text: dark enough for 4.5:1 contrast on every background */
   --line: #DCE3E0;        /* borders */
   --accent: #2A7382;      /* teal green: checkmarks and progress */
   --accent-soft: #E0EEF0; /* background of a checked card */
@@ -22,8 +22,10 @@
   --good: #2A7382;        /* goal reached (same as the accent; teal so it stays distinct from red for colorblind users) */
   --partial: #E2B33C;     /* some done */
   --missed: #D9644F;      /* nothing done */
-  --on-day: #FFFFFF;      /* number on a green or red day */
+  --on-day: #FFFFFF;      /* number on a green day */
   --on-partial: #17201D;  /* number on a yellow day: dark, for contrast */
+  --on-missed: #17201D;   /* number on a red day: dark, for contrast (a darker red would look like the teal to colorblind users) */
+  --danger: #B3412E;      /* Remove buttons: a darker red, so red text on white is readable */
 
   --font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --radius: 16px;
@@ -33,6 +35,7 @@
     --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
     --line: #26312E; --accent: #6FD0B0; --accent-soft: #1C3029; --on-accent: #0E1A16;
     --good: #6FD0B0; --partial: #E7C15A; --missed: #D9644F; --on-day: #0E1A16; --on-partial: #0E1A16;
+    --on-missed: #0E1A16; --danger: #D9644F;
     color-scheme: dark;
   }
 }
@@ -40,6 +43,7 @@
   --bg: #101513; --surface: #182120; --fg: #E6EDEA; --muted: #91A09A;
   --line: #26312E; --accent: #6FD0B0; --accent-soft: #1C3029; --on-accent: #0E1A16;
   --good: #6FD0B0; --partial: #E7C15A; --missed: #D9644F; --on-day: #0E1A16; --on-partial: #0E1A16;
+  --on-missed: #0E1A16; --danger: #D9644F;
   color-scheme: dark;
 }
 
@@ -93,7 +97,7 @@ body {
 .progress.done { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .progress.done .ring-track { stroke: color-mix(in srgb, var(--on-accent) 25%, transparent); }
 .progress.done .ring-fill { stroke: var(--on-accent); }
-.progress.done .ring-label span, .progress.done .count { color: inherit; opacity: .8; }
+.progress.done .ring-label span, .progress.done .count { color: inherit; opacity: .9; }
 .count { margin-top: 4px !important; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Exercise list */
@@ -166,8 +170,8 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .day.good    { background: var(--good);    color: var(--on-day); }
 .day.partial { background: var(--partial); color: var(--on-partial); }
-.day.missed  { background: var(--missed);  color: var(--on-day); }
-.day.before, .day.future { color: var(--muted); opacity: .5; }   /* before you started / not yet */
+.day.missed  { background: var(--missed);  color: var(--on-missed); }
+.day.before, .day.future { color: var(--muted); }   /* before you started / not yet: no colored circle */
 .day.today { box-shadow: inset 0 0 0 2px var(--fg); }             /* ring around today */
 .day.selected { outline: 2px solid var(--fg); outline-offset: 2px; }
 
@@ -317,9 +321,9 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 }
 .small-btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); min-width: 44px; }
 .small-btn:disabled { opacity: .35; cursor: default; }
-.small-btn.danger { color: var(--missed); }
+.small-btn.danger { color: var(--danger); }
 .primary-btn { border: 0; background: var(--accent); color: var(--on-accent); }
-.primary-btn.danger-fill { background: var(--missed); color: var(--on-day); }
+.primary-btn.danger-fill { background: var(--danger); color: var(--on-accent); }
 .secondary-btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
 .small-btn:focus-visible, .primary-btn:focus-visible, .secondary-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* the label works as the button for the hidden file input */
@@ -332,6 +336,8 @@ button.day { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .backup-msg:empty { display: none; }
 
 /* hides an element visually but keeps it usable (for the file input) */
+/* a title that gets focus when its screen opens: no ring, the whole screen changed */
+[tabindex="-1"]:focus { outline: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Bottom tab bar ---------- */

@@ -20,6 +20,19 @@ function save() {
 const goalOn = key => goalFor(state, key);
 const statusOf = key => dayStatus(state, key, todayKey());
 
+// Keyboard and screen reader users: a redraw replaces the buttons, and the focused one would
+// disappear with them, throwing the focus back to the top of the page. So remember the focused
+// element's id, redraw, and focus the new element with the same id, or `fallbackId` if it's gone.
+function keepFocus(render, fallbackId) {
+  const id = document.activeElement && document.activeElement.id;
+  render();
+  if (!id) return;
+  const el = document.getElementById(id);
+  // a button that just became disabled (e.g. + at the maximum) keeps the focus but can't be used
+  const target = el && !el.disabled ? el : document.getElementById(fallbackId);
+  if (target && document.activeElement !== target) target.focus();
+}
+
 // ---------- 5. Checking an exercise ----------
 // Tapping a card adds the exercise to today's done list,
 // or removes it if it was already checked. Only today can be changed.
@@ -29,7 +42,7 @@ function toggle(id) {
   toggleDone(state, todayKey(), id);
   save();
   justToggled = id;
-  renderToday();
+  keepFocus(renderToday);
   justToggled = null;
 }
 
@@ -121,12 +134,15 @@ function renderCalendar() {
     // Days you can open: from the start date up to today
     const canOpen = status !== "future" && status !== "before";
     const cell = document.createElement(canOpen ? "button" : "span");
+    cell.id = "day-" + key;
     cell.className = `day ${status}` + (key === today ? " today" : "") + (key === selectedKey ? " selected" : "");
     cell.textContent = d;
     if (canOpen) {
       cell.type = "button";
-      cell.setAttribute("aria-label", `${keyToDate(key).toLocaleDateString("en-US", { month: "long", day: "numeric" })}: ${STATUS_TEXT[status]}`);
-      cell.addEventListener("click", () => { selectedKey = key; renderCalendar(); });
+      const date = keyToDate(key).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+      cell.setAttribute("aria-label", `${date}${key === today ? ", today" : ""}: ${STATUS_TEXT[status]}`);
+      cell.setAttribute("aria-pressed", key === selectedKey); // its details are shown below
+      cell.addEventListener("click", () => { selectedKey = key; keepFocus(renderCalendar); });
     }
     grid.appendChild(cell);
   }
@@ -173,7 +189,8 @@ function shiftMonth(delta) {
   if (calMonth < 0) { calMonth = 11; calYear--; }
   if (calMonth > 11) { calMonth = 0; calYear++; }
   selectedKey = null;
-  renderCalendar();
+  // at the first or last month the arrow gets disabled: then focus the other arrow
+  keepFocus(renderCalendar, delta < 0 ? "cal-next" : "cal-prev");
 }
 document.getElementById("cal-prev").addEventListener("click", () => shiftMonth(-1));
 document.getElementById("cal-next").addEventListener("click", () => shiftMonth(1));
@@ -238,8 +255,10 @@ function renderWeeks(today) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "week";
+    btn.id = "week-" + mon;
     btn.setAttribute("aria-pressed", mon === selectedWeek);
-    btn.setAttribute("aria-label", weekText(mon, sun, c));
+    // the name starts with the visible label, so "tap 10/19" works with voice control
+    btn.setAttribute("aria-label", `${label}, ${weekText(mon, sun, c)}`);
 
     const col = document.createElement("span");
     col.className = "week-col";
@@ -255,7 +274,7 @@ function renderWeeks(today) {
     btn.append(col, lab);
     btn.addEventListener("click", () => {
       selectedWeek = mon === selectedWeek ? null : mon;
-      renderWeeks(today);
+      keepFocus(() => renderWeeks(today));
     });
     box.appendChild(btn);
 
@@ -315,8 +334,13 @@ function renderStreak() {
     const dot = document.createElement("span");
     dot.className = "week-dot " + status;
     const name = keyToDate(k).toLocaleDateString("en-US", { weekday: "long" });
-    li.setAttribute("aria-label", `${name}: ${STATUS_TEXT[status] || "Not tracked"}`);
-    li.append(dot, name[0]); // first letter: M, T, W…
+    const letter = document.createElement("span"); // first letter: M, T, W…
+    letter.setAttribute("aria-hidden", "true");
+    letter.textContent = name[0];
+    const spoken = document.createElement("span"); // what a screen reader says instead
+    spoken.className = "visually-hidden";
+    spoken.textContent = `${name}: ${STATUS_TEXT[status] || "Not tracked"}`;
+    li.append(dot, letter, spoken);
     dots.appendChild(li);
   }
 
@@ -343,14 +367,16 @@ function renderStreak() {
 function setGoal(n) {
   setGoalIn(state, todayKey(), n);
   save();
-  renderSettings();
+  // at 1 or at the maximum the button gets disabled: then focus the other one
+  keepFocus(renderSettings, document.activeElement.id === "goal-plus" ? "goal-minus" : "goal-plus");
 }
 
 // Moves an exercise up (-1) or down (+1) among the active ones
 function moveExercise(id, dir) {
   moveExerciseIn(state, id, dir);
   save();
-  renderSettings();
+  // focus follows the exercise; at the top or bottom, the other arrow
+  keepFocus(renderSettings, (dir < 0 ? "down-" : "up-") + id);
 }
 
 let confirmRemoveId = null; // the exercise whose "Remove" was tapped once and waits for confirmation
@@ -359,13 +385,13 @@ function removeExercise(id) {
   removeExerciseIn(state, id, todayKey()); // also lowers the goal if fewer exercises are left
   confirmRemoveId = null;
   save();
-  renderSettings();
+  keepFocus(renderSettings, "restore-" + id); // its "Restore" button in the Removed list
 }
 
 function restoreExercise(id) {
   restoreExerciseIn(state, id);
   save();
-  renderSettings();
+  keepFocus(renderSettings, "name-" + id); // the exercise is back in the list
 }
 
 function addExercise(name, dose) {
@@ -392,11 +418,11 @@ function renderSettings() {
     li.innerHTML = `
       <div class="edit-fields">
         <input class="field" type="text" aria-label="Exercise name" maxlength="40">
-        <input class="field dose-field" type="text" aria-label="Amount" maxlength="20" placeholder="Amount">
+        <input class="field dose-field" type="text" maxlength="20" placeholder="Amount">
       </div>
       <div class="edit-actions">
-        <button type="button" class="small-btn" data-act="up" aria-label="Move up">↑</button>
-        <button type="button" class="small-btn" data-act="down" aria-label="Move down">↓</button>
+        <button type="button" class="small-btn" data-act="up">↑</button>
+        <button type="button" class="small-btn" data-act="down">↓</button>
         <button type="button" class="small-btn danger" data-act="remove"></button>
       </div>`;
     const [nameInput, doseInput] = li.querySelectorAll("input");
@@ -409,17 +435,25 @@ function renderSettings() {
     });
     doseInput.addEventListener("change", () => { ex.dose = doseInput.value.trim(); save(); });
 
+    doseInput.setAttribute("aria-label", `Amount for ${ex.name}`);
+
+    // Button names say which exercise they belong to: "Move Walk up", not just "Move up"
     const [up, down, rm] = li.querySelectorAll("button");
+    up.id = "up-" + ex.id; down.id = "down-" + ex.id; rm.id = "rm-" + ex.id;
+    up.setAttribute("aria-label", `Move ${ex.name} up`);
+    down.setAttribute("aria-label", `Move ${ex.name} down`);
     up.disabled = i === 0;
     down.disabled = i === active.length - 1;
     up.addEventListener("click", () => moveExercise(ex.id, -1));
     down.addEventListener("click", () => moveExercise(ex.id, 1));
     // Remove needs two taps: "Remove" → "Sure?" (the page can't use pop-up dialogs reliably)
-    rm.textContent = confirmRemoveId === ex.id ? "Sure?" : "Remove";
+    const confirming = confirmRemoveId === ex.id;
+    rm.textContent = confirming ? "Sure?" : "Remove";
+    rm.setAttribute("aria-label", confirming ? `Sure? Remove ${ex.name}` : `Remove ${ex.name}`);
     rm.disabled = active.length <= 1; // keep at least one exercise
     rm.addEventListener("click", () => {
       if (confirmRemoveId === ex.id) removeExercise(ex.id);
-      else { confirmRemoveId = ex.id; renderSettings(); }
+      else { confirmRemoveId = ex.id; keepFocus(renderSettings); }
     });
     list.appendChild(li);
   });
@@ -438,7 +472,9 @@ function renderSettings() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "small-btn";
+    btn.id = "restore-" + ex.id;
     btn.textContent = "Restore";
+    btn.setAttribute("aria-label", `Restore ${ex.name}`);
     btn.addEventListener("click", () => restoreExercise(ex.id));
     li.append(span, btn);
     rmList.appendChild(li);
@@ -538,16 +574,23 @@ function showView(name) {
 for (const t of TABS) {
   document.getElementById("tab-" + t).addEventListener("click", () => showView(t));
 }
-document.getElementById("open-settings").addEventListener("click", () => showView("settings"));
-document.getElementById("close-settings").addEventListener("click", () => showView("today"));
+// Settings replaces Today, so the focus moves with it: to the Settings title, and back to ⚙.
+document.getElementById("open-settings").addEventListener("click", () => {
+  showView("settings");
+  document.getElementById("settings-title").focus();
+});
+document.getElementById("close-settings").addEventListener("click", () => {
+  showView("today");
+  document.getElementById("open-settings").focus();
+});
 
 // When you come back to the app (e.g. the next morning), redraw so "today" is really today.
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
-  if (currentView === "today") renderToday();
-  if (currentView === "calendar") renderCalendar();
+  if (currentView === "today") keepFocus(renderToday);
+  if (currentView === "calendar") keepFocus(renderCalendar);
   if (currentView === "streak") renderStreak();
-  if (currentView === "stats") renderStats();
+  if (currentView === "stats") keepFocus(renderStats);
 });
 
 // First draw

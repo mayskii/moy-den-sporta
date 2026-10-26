@@ -66,6 +66,12 @@ The logic gets the data and today's date as inputs instead of reading them itsel
 
 **Tests.** 46 tests with Node's built-in test runner (`node:test`), no test libraries. GitHub Actions runs them and ESLint on every push. Writing them found real bugs in backup restore: a hand-edited backup file could bring in goals as text (so the + button turned 3 into 31) or goals that were all invalid, which made the app crash on every open. The restore code now cleans such files.
 
+**Accessibility.** Lighthouse gives 100, but it only looks at the first screen. So I also ran axe (the checker inside Lighthouse) on every tab and state in both themes, and went through the app with the keyboard only. That found two real problems:
+- Contrast: some text was below 4.5:1 (white numbers on red calendar days, red "Remove" text, inactive period buttons). I darkened the grey text a little and made the numbers on red days dark, instead of darkening the red: a darker red would look like the teal "goal reached" to colorblind users.
+- Keyboard focus was lost after almost every action: checking an exercise redraws the list, so the focused button disappeared and the next Tab started from the top. Now the focus stays on the same button, or moves to the next logical place ("Remove Walk" → "Restore Walk").
+
+Buttons also tell screen readers what they belong to ("Move Walk up", not just "Move up"), and calendar days say the weekday, the date and how the day went.
+
 **PWA.** `manifest.webmanifest` describes the app (name, icons, colors) so phones can install it. The service worker `sw.js` asks the network first, so all files always come from the same version, and keeps a copy of each file for when there is no internet.
 
 **Lighthouse** (live site, mobile, October 2026): Performance 97–100 (varies between runs) · Accessibility 100 · Best Practices 100 · SEO 100. On a simulated mid-range phone with slow 4G, the main content appears in about 1.2 s.
